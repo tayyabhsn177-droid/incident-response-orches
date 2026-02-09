@@ -1,0 +1,24 @@
+# Core AI/LLM Dependencies
+langchain
+langgraph
+openai
+
+# Elasticsearch
+elasticsearch
+elastic-transport
+
+# Data Processing
+pydantic
+python-dotenv
+
+# API Integrations
+requests
+kubernetes
+
+# Async Support
+aiohttp
+asyncio
+
+# Utilities
+python-dateutil
+pytz
