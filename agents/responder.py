@@ -5,7 +5,7 @@ Responder Agent - Executes remediation safely or requests human approval
 import time
 from typing import Dict, Any, List
 from datetime import datetime
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 from agents.state import IncidentState, ResponderAction
 
 
@@ -37,15 +37,15 @@ Safety is paramount. When in doubt, request human approval.
     AUTO_EXECUTE_MIN_CONFIDENCE = 85.0
     APPROVAL_MIN_CONFIDENCE = 70.0
     
-    def __init__(self, model_name: str = "gpt-4o", workflow_tools: Dict[str, Any] = None):
+    def __init__(self, workflow_tools: Dict[str, Any] = None):
         """
         Initialize the Responder Agent
         
         Args:
-            model_name: OpenAI model to use
+            model_name: GEMINI model to use
             workflow_tools: Dictionary of workflow execution tools
         """
-        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        self.llm = init_chat_model("gemini-2.5-flash-lite", model_provider="google_genai", temperature=0.7)
         self.workflow_tools = workflow_tools or {}
     
     def respond(self, state: IncidentState) -> Dict[str, Any]:

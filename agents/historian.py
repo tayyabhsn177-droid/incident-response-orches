@@ -6,8 +6,10 @@ import time
 from typing import Dict, Any, List
 from datetime import datetime
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from agents.state import IncidentState, HistorianMatches, SimilarIncident
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 class HistorianAgent:
@@ -59,18 +61,18 @@ Search the incident history and return the top 3 most similar incidents with the
 Provide similarity scores (0-100) based on symptom match, service match, and error pattern match.
 """
 
-    def __init__(self, model_name: str = "gpt-4o", elasticsearch_tool=None, search_tool=None, use_real_es: bool = True):
+    def __init__(self,  elasticsearch_tool=None, search_tool=None, use_real_es: bool = True):
         """
         Initialize the Historian Agent
         
         Args:
-            model_name: OpenAI model to use
+            model_name: GEMINI model to use
             elasticsearch_tool: Tool for querying Elasticsearch
             search_tool: Search tool for hybrid search
             use_real_es: If True, use real Elasticsearch; if False, use simulated data
         """
-        self.llm = ChatOpenAI(model=model_name, temperature=0)
-        self.embeddings = OpenAIEmbeddings()
+        self.llm = init_chat_model("gemini-2.5-flash-lite", model_provider="google_genai", temperature=0.7)
+        self.embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
         self.elasticsearch_tool = elasticsearch_tool
         self.search_tool = search_tool
         self.use_real_es = use_real_es and search_tool is not None
@@ -163,8 +165,8 @@ Provide similarity scores (0-100) based on symptom match, service match, and err
         findings = state.detective_findings
         
         try:
-            print(f"  🔍 Searching for similar incidents...")
-            print(f"  📝 Query: {search_query[:100]}...")
+            print(f"  Searching for similar incidents...")
+            print(f"  Query: {search_query[:100]}...")
             
             # Generate embedding for current incident
             query_embedding = self.embeddings.embed_query(search_query)

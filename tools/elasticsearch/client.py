@@ -24,8 +24,8 @@ class ElasticsearchClient:
         from elasticsearch import Elasticsearch, helpers
 
         client = Elasticsearch(
-            "https://cea7dc701ec94051b4c6e7fcc316e6ec.us-central1.gcp.cloud.es.io",
-            api_key="djRVQ1Fad0JUSjRHcjRwYXhHX0k6bWRycmw4b2dDTU9WMDRldkxxdXJRdw==",
+            hosts=[os.getenv("ELASTICSEARCH_URL")],
+            api_key=os.getenv("ELASTIC_API_KEY"),
         )
         
         return client

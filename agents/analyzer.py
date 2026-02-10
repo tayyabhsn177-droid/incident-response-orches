@@ -5,7 +5,7 @@ Analyzer Agent - Determines root cause and recommends fix with confidence score
 import time
 from typing import Dict, Any, List
 from datetime import timedelta
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from agents.state import (
     IncidentState, AnalyzerDiagnosis, Hypothesis,
@@ -92,15 +92,15 @@ Consider:
 - What do the error messages indicate?
 """
 
-    def __init__(self, model_name: str = "gpt-4o", elasticsearch_tool=None):
+    def __init__(self, elasticsearch_tool=None):
         """
         Initialize the Analyzer Agent
         
         Args:
-            model_name: OpenAI model to use (can use Claude for deeper reasoning)
+            model_name: GEMINI model to use (can use Claude for deeper reasoning)
             elasticsearch_tool: Tool for querying Elasticsearch
         """
-        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        self.llm = init_chat_model("gemini-2.5-flash-lite", model_provider="google_genai", temperature=0.7)
         self.elasticsearch_tool = elasticsearch_tool
         
         self.prompt = ChatPromptTemplate.from_messages([

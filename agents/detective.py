@@ -5,7 +5,7 @@ Detective Agent - Rapidly gathers context about the incident
 import time
 from datetime import datetime, timedelta
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from agents.state import IncidentState, DetectiveFindings
 
@@ -63,16 +63,16 @@ Provide your findings in JSON format with these fields:
 - key_error_messages (list of top 5-10 error messages)
 """
 
-    def __init__(self, model_name: str = "gpt-4o", elasticsearch_tool=None, use_real_es: bool = True):
+    def __init__(self, elasticsearch_tool=None, use_real_es: bool = True):
         """
         Initialize the Detective Agent
         
         Args:
-            model_name: OpenAI model to use
+            model_name: GEMINI FLASH model to use
             elasticsearch_tool: Tool for querying Elasticsearch
             use_real_es: If True, use real Elasticsearch; if False, use simulated data
         """
-        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        self.llm = init_chat_model("gemini-2.5-flash-lite", model_provider="google_genai", temperature=0.7)
         self.elasticsearch_tool = elasticsearch_tool
         self.use_real_es = use_real_es and elasticsearch_tool is not None
         
