@@ -42,7 +42,6 @@ def initialize_orchestrator(use_elasticsearch: bool = True) -> IncidentOrchestra
             esql_tool = ESQLTool(es_client)
             search_tool = SearchTool(es_client)
             
-            print(f"  ✅ Elasticsearch connected: {es_client.host}:{es_client.port}")
             
         except ImportError as e:
             print(f"  ⚠️  Elasticsearch tools not available: {str(e)}")

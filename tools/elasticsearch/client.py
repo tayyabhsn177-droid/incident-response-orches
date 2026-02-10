@@ -24,7 +24,7 @@ class ElasticsearchClient:
         from elasticsearch import Elasticsearch, helpers
 
         client = Elasticsearch(
-            hosts=[os.getenv("ELASTICSEARCH_URL")],
+            os.getenv("ELASTICSEARCH_URL"),
             api_key=os.getenv("ELASTIC_API_KEY"),
         )
         
