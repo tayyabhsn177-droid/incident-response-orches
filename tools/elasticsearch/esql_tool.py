@@ -1,5 +1,6 @@
 """
 ES|QL query tool for executing Elasticsearch Query Language queries
+FIXED VERSION - Uses correct ES|QL API according to Python client docs
 """
 
 from typing import Dict, Any, List, Optional
@@ -34,15 +35,14 @@ class ESQLTool:
             Query results
         """
         try:
-            # ES|QL API endpoint
-            response = self.es_client.client.perform_request(
-                method="POST",
-                path="/_query",
-                body={"query": query},
-                headers={"Content-Type": "application/json"}
+            # Use the ES|QL API - correct method according to Python client docs
+            # https://www.elastic.co/docs/reference/elasticsearch/clients/python/esql-query-builder
+            response = self.es_client.client.esql.query(
+                query=query
             )
             
-            return response
+            # The response is an ObjectApiResponse, access the body
+            return response.body
             
         except Exception as e:
             print(f"❌ ES|QL query failed: {str(e)}")
@@ -73,12 +73,13 @@ class ESQLTool:
         
         levels_str = ", ".join([f'"{level}"' for level in error_levels])
         
+        # ES|QL requires backticks around field names with dots
         query = f"""
         FROM logs-*
         | WHERE @timestamp >= "{start_time.isoformat()}"
         | WHERE @timestamp <= "{end_time.isoformat()}"
-        | WHERE service.name == "{service_name}"
-        | WHERE log.level IN ({levels_str})
+        | WHERE `service.name` == "{service_name}"
+        | WHERE `log.level` IN ({levels_str})
         | STATS error_count = COUNT(*) BY bucket = BUCKET(@timestamp, 1 minute)
         | SORT bucket
         """
@@ -86,7 +87,7 @@ class ESQLTool:
         try:
             result = self.execute(query)
             
-            # Parse results
+            # Parse results - ES|QL returns columns and values
             timeline = []
             if 'values' in result:
                 for row in result['values']:
@@ -124,14 +125,15 @@ class ESQLTool:
         hosts_str = ", ".join([f'"{host}"' for host in host_names])
         metrics_str = ", ".join([f'"{m}"' for m in metric_types])
         
+        # ES|QL requires backticks around field names with dots
         query = f"""
         FROM metrics-*
         | WHERE @timestamp >= "{start_time.isoformat()}"
-        | WHERE host.name IN ({hosts_str})
-        | WHERE metricset.name IN ({metrics_str})
-        | STATS avg_cpu = AVG(system.cpu.total.pct),
-                avg_memory = AVG(system.memory.used.pct)
-          BY host.name
+        | WHERE `host.name` IN ({hosts_str})
+        | WHERE `metricset.name` IN ({metrics_str})
+        | STATS avg_cpu = AVG(`system.cpu.total.pct`),
+                avg_memory = AVG(`system.memory.used.pct`)
+          BY `host.name`
         """
         
         try:
@@ -170,10 +172,11 @@ class ESQLTool:
         Returns:
             List of deployments
         """
+        # ES|QL requires backticks around field names with dots
         query = f"""
         FROM deployments-*
         | WHERE @timestamp >= "{start_time.isoformat()}"
-        | WHERE service.name == "{service_name}"
+        | WHERE `service.name` == "{service_name}"
         | SORT @timestamp DESC
         | LIMIT {limit}
         """
@@ -219,12 +222,13 @@ class ESQLTool:
         Returns:
             List of error messages
         """
+        # ES|QL requires backticks around field names with dots
         query = f"""
         FROM logs-*
         | WHERE @timestamp >= "{start_time.isoformat()}"
         | WHERE @timestamp <= "{end_time.isoformat()}"
-        | WHERE service.name == "{service_name}"
-        | WHERE log.level IN ("ERROR", "FATAL", "CRITICAL")
+        | WHERE `service.name` == "{service_name}"
+        | WHERE `log.level` IN ("ERROR", "FATAL", "CRITICAL")
         | STATS count = COUNT(*) BY message
         | SORT count DESC
         | LIMIT {limit}
@@ -249,6 +253,7 @@ class ESQLTool:
 class SearchTool:
     """
     Tool for executing regular Elasticsearch queries (DSL)
+    FIXED VERSION - Corrects parameter passing to avoid conflicts
     """
     
     def __init__(self, es_client: ElasticsearchClient):
@@ -284,6 +289,7 @@ class SearchTool:
         if sort:
             body["sort"] = sort
         
+        # Call the client's search method with just body parameter
         return self.es_client.search(index, body, size)
     
     def hybrid_search(
@@ -311,7 +317,8 @@ class SearchTool:
         Returns:
             Search results
         """
-        query = {
+        # Build query body - don't pass size as separate parameter
+        query_body = {
             "query": {
                 "bool": {
                     "should": [
@@ -330,10 +337,14 @@ class SearchTool:
                 "k": k,
                 "num_candidates": 50
             },
-            "size": size
+            "size": size  # size is in the body, not a separate parameter
         }
         
-        result = self.es_client.search(index, query, size)
+        # Call ES client search with only index and body
+        result = self.es_client.client.search(
+            index=index,
+            body=query_body
+        )
         
         # Extract hits
         hits = []

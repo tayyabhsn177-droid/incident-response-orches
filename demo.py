@@ -1,10 +1,11 @@
 """
 Demo script to test the Incident Response Orchestrator
 Simulates a production incident and shows the full workflow
+FIXED VERSION - None-safe formatting
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from agents.state import AlertPayload
 from main import initialize_orchestrator
 
@@ -24,7 +25,7 @@ def demo_scenario_1_bad_deployment():
         alert_id="ALERT-20260203-001",
         severity="critical",
         service="checkout-api",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),  # Fixed: use timezone-aware datetime
         message="5xx error rate increased by 340% in the last 5 minutes",
         tags=["production", "checkout", "http-errors"]
     )
@@ -47,7 +48,7 @@ def demo_scenario_2_connection_timeout():
         alert_id="ALERT-20260203-002",
         severity="critical",
         service="user-service",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         message="Database connection timeout rate exceeded threshold",
         tags=["production", "database", "timeouts"]
     )
@@ -70,7 +71,7 @@ def demo_scenario_3_unknown_issue():
         alert_id="ALERT-20260203-003",
         severity="warning",
         service="notification-service",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         message="Unusual error pattern detected in notification delivery",
         tags=["production", "notifications", "anomaly"]
     )
@@ -115,12 +116,15 @@ def run_demo(scenario_num: int = 1, use_elasticsearch: bool = True):
         report = orchestrator.generate_report(final_state)
         print(json.dumps(report, indent=2, default=str))
         
-        # Summary
+        # Summary - FIXED: None-safe formatting
         print("\n" + "="*100)
         print("SUMMARY")
         print("="*100)
         print(f"Incident ID: {final_state.incident_id}")
-        print(f"Total Duration: {final_state.total_duration_seconds:.2f} seconds")
+        
+        # None-safe duration formatting
+        duration = final_state.total_duration_seconds if final_state.total_duration_seconds is not None else 0.0
+        print(f"Total Duration: {duration:.2f} seconds")
         print(f"Status: {final_state.workflow_status}")
         
         if final_state.responder_action:
@@ -130,16 +134,27 @@ def run_demo(scenario_num: int = 1, use_elasticsearch: bool = True):
         
         print("="*100 + "\n")
         
-        # Metrics that would be tracked
+        # Metrics that would be tracked - FIXED: None-safe checks
         print("\nMETRICS (would be stored in Elasticsearch):")
         print(f"  - Detection Time: < 5 seconds")
-        print(f"  - Investigation Time: {final_state.detective_findings.investigation_duration_seconds:.2f}s")
-        print(f"  - Analysis Time: {final_state.analyzer_diagnosis.analysis_duration_seconds:.2f}s")
-        print(f"  - Response Time: {final_state.responder_action.execution_duration_seconds:.2f}s")
-        print(f"  - Total MTTR: {final_state.total_duration_seconds:.2f}s")
+        
+        if final_state.detective_findings:
+            inv_duration = final_state.detective_findings.investigation_duration_seconds
+            print(f"  - Investigation Time: {inv_duration:.2f}s")
         
         if final_state.analyzer_diagnosis:
-            print(f"  - Root Cause Confidence: {final_state.analyzer_diagnosis.primary_root_cause.confidence:.1f}%")
+            analysis_duration = final_state.analyzer_diagnosis.analysis_duration_seconds
+            print(f"  - Analysis Time: {analysis_duration:.2f}s")
+        
+        if final_state.responder_action:
+            response_duration = final_state.responder_action.execution_duration_seconds
+            print(f"  - Response Time: {response_duration:.2f}s")
+        
+        print(f"  - Total MTTR: {duration:.2f}s")
+        
+        if final_state.analyzer_diagnosis:
+            confidence = final_state.analyzer_diagnosis.primary_root_cause.confidence
+            print(f"  - Root Cause Confidence: {confidence:.1f}%")
         
         if final_state.responder_action and final_state.responder_action.decision == "AUTO_EXECUTE":
             print(f"  - Auto-Resolution: YES ✅")
@@ -148,7 +163,8 @@ def run_demo(scenario_num: int = 1, use_elasticsearch: bool = True):
         
     except Exception as e:
         print(f"\n❌ Demo failed with error: {str(e)}")
-        raise
+        import traceback
+        traceback.print_exc()
 
 
 def run_all_scenarios():

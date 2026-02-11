@@ -1,6 +1,6 @@
 """
 Orchestrator - LangGraph-based multi-agent coordinator
-FIXED VERSION - Corrects state management issues
+FIXED VERSION - Corrects state management and None-safe formatting
 Manages the workflow between Detective, Historian, Analyzer, and Responder agents
 """
 
@@ -153,7 +153,7 @@ class IncidentOrchestrator:
             Final incident state with all agent outputs
         """
         # Generate unique incident ID
-        incident_id = f"INC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        incident_id = f"INC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         
         print(f"\n{'#'*80}")
         print(f"# 🚨 NEW INCIDENT: {incident_id}")
@@ -199,7 +199,9 @@ class IncidentOrchestrator:
             
             print(f"\n{'#'*80}")
             print(f"# ✅ INCIDENT RESOLVED: {incident_id}")
-            print(f"# Total Duration: {final_state.total_duration_seconds:.2f}s")
+            # FIXED: None-safe formatting
+            duration = final_state.total_duration_seconds if final_state.total_duration_seconds is not None else 0.0
+            print(f"# Total Duration: {duration:.2f}s")
             print(f"# Status: {final_state.workflow_status}")
             print(f"{'#'*80}\n")
             

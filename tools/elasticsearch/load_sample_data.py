@@ -5,7 +5,7 @@ Creates realistic production-like data
 
 import random
 from datetime import datetime, timedelta
-from tools.elasticsearch.client import ElasticsearchClient
+from client import ElasticsearchClient
 
 
 def generate_sample_logs(service_name: str, start_time: datetime, num_docs: int = 1000) -> list:

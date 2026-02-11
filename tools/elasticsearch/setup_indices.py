@@ -2,7 +2,7 @@
 Script to set up all required Elasticsearch indices
 """
 
-from tools.elasticsearch.client import ElasticsearchClient
+from client import ElasticsearchClient
 
 
 # Index mappings
