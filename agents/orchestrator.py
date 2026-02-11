@@ -1,5 +1,6 @@
 """
 Orchestrator - LangGraph-based multi-agent coordinator
+FIXED VERSION - Corrects state management issues
 Manages the workflow between Detective, Historian, Analyzer, and Responder agents
 """
 
@@ -179,7 +180,22 @@ class IncidentOrchestrator:
         
         # Run the workflow
         try:
-            final_state = self.workflow.invoke(initial_state)
+            # FIXED: LangGraph returns the final state as a dict, extract the actual state
+            workflow_result = self.workflow.invoke(initial_state)
+            
+            # The result might be a dict with state fields, convert back to IncidentState
+            if isinstance(workflow_result, dict):
+                # Update the initial_state with all the dict values
+                for key, value in workflow_result.items():
+                    if hasattr(initial_state, key):
+                        setattr(initial_state, key, value)
+                final_state = initial_state
+            else:
+                final_state = workflow_result
+            
+            # Ensure the state is marked as completed
+            if final_state.workflow_status != "completed":
+                final_state.mark_completed()
             
             print(f"\n{'#'*80}")
             print(f"# ✅ INCIDENT RESOLVED: {incident_id}")
