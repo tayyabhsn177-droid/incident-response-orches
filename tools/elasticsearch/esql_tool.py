@@ -1,6 +1,6 @@
 """
 ES|QL query tool for executing Elasticsearch Query Language queries
-FIXED VERSION - Uses correct ES|QL API according to Python client docs
+FIXED VERSION - Corrected deployment index name from deployments-* to deployments
 """
 
 from typing import Dict, Any, List, Optional
@@ -36,7 +36,6 @@ class ESQLTool:
         """
         try:
             # Use the ES|QL API - correct method according to Python client docs
-            # https://www.elastic.co/docs/reference/elasticsearch/clients/python/esql-query-builder
             response = self.es_client.client.esql.query(
                 query=query
             )
@@ -172,9 +171,10 @@ class ESQLTool:
         Returns:
             List of deployments
         """
-        # ES|QL requires backticks around field names with dots
+        # FIXED: Changed from 'deployments-*' to 'deployments' (no wildcard)
+        # The actual index is named 'deployments', not a pattern
         query = f"""
-        FROM deployments-*
+        FROM deployments
         | WHERE @timestamp >= "{start_time.isoformat()}"
         | WHERE `service.name` == "{service_name}"
         | SORT @timestamp DESC

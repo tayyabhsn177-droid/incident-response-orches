@@ -1,5 +1,6 @@
 """
 Responder Agent - Executes remediation safely or requests human approval
+FIXED VERSION - None-safe duration formatting
 """
 
 import time
@@ -42,7 +43,6 @@ Safety is paramount. When in doubt, request human approval.
         Initialize the Responder Agent
         
         Args:
-            model_name: GEMINI model to use
             workflow_tools: Dictionary of workflow execution tools
         """
         self.llm = init_chat_model("gemini-2.5-flash-lite", model_provider="google_genai", temperature=0.7)
@@ -242,9 +242,15 @@ Safety is paramount. When in doubt, request human approval.
         return f"Service {service} monitored for {duration_seconds}s. Error rate decreased by 95%. Service healthy."
     
     def _create_notification(self, state: IncidentState, decision: str, status: str) -> str:
-        """Create Slack notification message"""
+        """
+        FIXED: Create Slack notification message with None-safe duration formatting
+        """
         diagnosis = state.analyzer_diagnosis
         findings = state.detective_findings
+        
+        # FIXED: Calculate duration safely - use elapsed time since start
+        elapsed_time = (datetime.now() - state.started_at).total_seconds()
+        duration_str = f"{elapsed_time:.1f}s"
         
         msg = f"""🤖 **Incident Response Agent** - {state.incident_id}
 
@@ -260,7 +266,7 @@ Safety is paramount. When in doubt, request human approval.
 • {diagnosis.recommended_action.action}
 • Status: {status}
 • Decision: {decision}
-• Time to resolve: {state.total_duration_seconds:.1f}s
+• Time to resolve: {duration_str}
 
 📊 **MONITORING**:
 • Service health: Monitoring in progress

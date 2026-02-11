@@ -180,12 +180,11 @@ class IncidentOrchestrator:
         
         # Run the workflow
         try:
-            # FIXED: LangGraph returns the final state as a dict, extract the actual state
+            # Run the workflow
             workflow_result = self.workflow.invoke(initial_state)
             
-            # The result might be a dict with state fields, convert back to IncidentState
+            # Convert result dict back to IncidentState
             if isinstance(workflow_result, dict):
-                # Update the initial_state with all the dict values
                 for key, value in workflow_result.items():
                     if hasattr(initial_state, key):
                         setattr(initial_state, key, value)
@@ -193,9 +192,12 @@ class IncidentOrchestrator:
             else:
                 final_state = workflow_result
             
-            # Ensure the state is marked as completed
-            if final_state.workflow_status != "completed":
-                final_state.mark_completed()
+            # ENSURE completion is marked (ADD THIS)
+            if final_state.workflow_status == "completed" and final_state.completed_at is None:
+                final_state.completed_at = datetime.now()
+                final_state.total_duration_seconds = (
+                    final_state.completed_at - final_state.started_at
+                ).total_seconds()
             
             print(f"\n{'#'*80}")
             print(f"# ✅ INCIDENT RESOLVED: {incident_id}")

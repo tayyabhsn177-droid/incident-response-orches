@@ -66,7 +66,7 @@ INDICES = {
             "prevented_recurrence": {"type": "boolean"},
             "incident_embedding": {
                 "type": "dense_vector",
-                "dims": 1536,
+                "dims": 3072,  # Changed from 1536 to 3072
                 "index": True,
                 "similarity": "cosine"
             },
